@@ -1,6 +1,6 @@
 # #!/usr/bin/env python3
 
-# The following is an advancement of the Bayesain Gaussian process analysis 
+# The following is an conversion of the Bayesain Gaussian process analysis 
 # script by Simon Erenesto that can be found at -
 # https://github.com/SimonErnesto/Mental_health_spatiotemporal/blob/main/gp_model/gp_model.py
 # orignally implemented using pymc but impleneted here using the stan PPL
@@ -11,8 +11,8 @@ import arviz as az
 import pandas as pd
 import matplotlib.pyplot as plt
 import geopandas as gpd
+#import cmdstanpy as ps
 import stan as ps
-
 
 # Read in data csv and geespatial data in JSON format from github 
 data = pd.read_csv("https://raw.githubusercontent.com/SimonErnesto/Mental_health_spatiotemporal/main/gp_model/mental_health_covid_data.csv")
@@ -73,6 +73,7 @@ score = data.score.values
 
 X = np.arange(len(d))[:,None]
 X = np.ndarray.flatten(X)
+
 # # Stan GP model
 gpmod = '''
 data{
@@ -80,42 +81,34 @@ int<lower=1> N;
 array[N] real x;
 array[N] int<lower=0> y;
 }
-transformed data{
-real delta = 1e-9;
+transformed dat{
+vector[N] jitter = rep_vector(1e-9, N);
 }
 parameters{
-  real<lower=0> rho;
-  real<lower=0> alpha;
-  vector[N] eta;
+  real<lower=0> l;
+  real<lower=0> sigma;
+  vector[N] z_f;
 }
 model{
 
-vector[N] f;
-  {
-    matrix[N, N] L_K;
-    matrix[N, N] K = gp_exp_quad_cov(x, alpha, rho);
-
-    // diagonal elements
-    for (n in 1:N) {
-      K[n, n] = K[n, n] + delta;
-    }
-
-    L_K = cholesky_decompose(K);
-    f = L_K * eta;
-  }
-
+// Generate gp Kernel
+matrix[N, N] K_f = gp_exp_quad_cov(xn, sigma_f, lengthscale_f);
+matrix[N, N] L_f = cholesky_decompose(add_diag(K_f, jitter));
+                     
 // Priors
-rho ~ inv_gamma(5, 5);
-alpha ~ std_normal();
-eta ~ std_normal();
-// Likelihood
+l ~ normal(0, 1);
+z_f ~ std_normal();
+sigma ~ normal(0, 1);
 
+//
+f = l_f * z_f
+
+// Likelihood
 y ~ poisson(f);
 }
-generated quantities{
-}
-'''
-dataDic = {'N': len(score[0:100]), 'x': X[0:100], 'y': score[0:100]}
 
-sm = ps.build(gpmod, data = dataDic)
-fit = sm.sample(num_chains = 1, num_samples = 100, num_warmup = 100)
+'''
+# dataDic = {'N': len(score[0:100]), 'x': X[0:100], 'y': score[0:100]}
+
+# sm = ps.build(gpmod, data = dataDic)
+# fit = sm.sample(num_chains = 1, num_samples = 100, num_warmup = 100)

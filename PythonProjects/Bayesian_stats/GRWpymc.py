@@ -55,6 +55,7 @@ data = data.sort_values('date')
 
 D = len(data.date.unique())
 C = len(data.country.unique())
+print(C)
 
 c = pd.factorize(data['country'])[0].astype('int32')
 d = pd.factorize(data['date'])[0].astype('int32')
@@ -82,4 +83,4 @@ with pm.Model() as mod:
 with mod:
     trace = pm.sample(10, tune=1, chains=1, cores=1, init='adapt_diag', target_accept=0.99)
 
-print(az.summary(trace, var_names='β'))
+print(az.summary(trace, var_names='Σ'))

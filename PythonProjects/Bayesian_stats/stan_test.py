@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import stan as ps
 import time
 
-
-
 # data from Gossner et al (2022)
 data = pd.read_csv("https://raw.githubusercontent.com/SimonErnesto/risk_dengue_2015-2019/main/dengue_travel_europe.csv")
 
