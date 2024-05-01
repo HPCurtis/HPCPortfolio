@@ -1,0 +1,87 @@
+---
+title: "Physical distance perception"
+author: "Harrison Curtis"
+date: "2023-09-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import analysis and visualisation libraries
+```{r, message=FALSE}
+# Import data analysis and visualisation library 
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+```
+
+```{r}
+# Import data from the github repository.
+d <- read.csv('https://raw.githubusercontent.com/HPCurtis/Datasets/main/Maglio%20and%20Polman%202014.csv')
+
+# Convert categorical data to factor so that R functions operate correctly.
+d$orientation <- factor(d$orientation)
+d$station <- as.factor(d$station)
+```
+
+```{r}
+# Calculate summary statistics (means) by group. 
+stationMeans <- d %>% group_by(station) %>% summarise( mean(subjective_distance) )
+orientationMeans <- d %>% group_by(orientation) %>% summarise( mean(subjective_distance) )
+```
+
+```{r}
+
+# Plot group means using Barplots.
+stationMeans %>% ggplot(aes(x = station, y = `mean(subjective_distance)`)) + geom_col() +
+  theme_bw()
+```
+
+```{r}
+orientationMeans %>% ggplot(aes(x = orientation, y = `mean(subjective_distance)`)) + geom_col() +
+  theme_bw()
+```
+
+```{r}
+# Plot data using a bocplot split by orientation and station
+ggboxplot(data = d, x = 'station', 
+          y = 'subjective_distance', color = 'orientation') + xlab('Station') + ylab('Subjective distance recording')
+```
+
+```{r}
+summary(lm(subjective_distance ~ orientation, data  = d))
+```
+
+```{r}
+summary(lm(subjective_distance ~ station, data  = d))
+```
+
+```{r}
+summary(lm(subjective_distance ~ orientation*station, data = d))
+```
+
+
+```{r}
+# ANOVA approach
+ANOVA <- aov(subjective_distance ~ orientation*station, data = d)
+summary(ANOVA)
+```
+
+
+```{r}
+group_by(d, orientation, station) %>%
+  summarise(
+    count = n(),
+    mean = mean(subjective_distance, na.rm = TRUE),
+    sd = sd(subjective_distance, na.rm = TRUE))
+```
+
+
+```{r}
+
+
+TukeyHSD(ANOVA, data = d, which = "station")
+
+```
